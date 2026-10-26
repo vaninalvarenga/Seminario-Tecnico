@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acreditación de Evento</title>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #0f172a;
+        color: #ffffff;
+        margin: 0;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      h2 { margin: 10px 0 20px 0; font-size: 22px; text-align: center; }
+      #reader { width: 100%; max-width: 450px; border-radius: 12px; overflow: hidden; border: 3px solid #334155; }
+      #status-box { margin-top: 15px; width: 100%; max-width: 450px; padding: 15px; border-radius: 8px; display: none; font-weight: bold; box-sizing: border-box; text-align: center; }
+      .ok { background-color: #166534; border: 2px solid #22c55e; }
+      .duplicado { background-color: #854d0e; border: 2px solid #eab308; }
+      .error { background-color: #991b1b; border: 2px solid #ef4444; }
+      .participant-name { font-size: 18px; margin-bottom: 5px; }
+      .status-message { font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <h2>Control de Acceso QR</h2>
+    <div id="reader"></div>
+    <div id="status-box">
+      <div id="participant-name" class="participant-name"></div>
+      <div id="status-message" class="status-message"></div>
+    </div>
+
+    <script>
+      const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxs5iDCwcU8Vh2A0HAzdl86Yyz_4PiVWk9QYDQ-elYL74AzyarFt6-ca33cwALTDulL/exec";
+
+      let isScanning = true;
+
+      function onScanSuccess(decodedText) {
+        if (!isScanning) return;
+        isScanning = false;
+        consultarAppsScript(decodedText);
+      }
+
+      function consultarAppsScript(idUnico) {
+        const callbackName = "qrCallback_" + Date.now();
+
+        window[callbackName] = function (data) {
+          handleResult(data);
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+        };
+
+        const script = document.createElement("script");
+        script.src = APPS_SCRIPT_URL + "?id=" + encodeURIComponent(idUnico) + "&callback=" + encodeURIComponent(callbackName);
+        script.onerror = function () {
+          delete window[callbackName];
+          handleError();
+        };
+        document.body.appendChild(script);
+      }
+
+      function handleResult(res) {
+        const box = document.getElementById('status-box');
+        const nameEl = document.getElementById('participant-name');
+        const msgEl = document.getElementById('status-message');
+
+        box.style.display = 'block';
+        box.className = '';
+
+        if (res.status === 'ok') {
+          box.classList.add('ok');
+          nameEl.textContent = '✅ ' + res.nombre;
+          msgEl.textContent = res.mensaje;
+        } else if (res.status === 'duplicado') {
+          box.classList.add('duplicado');
+          nameEl.textContent = '⚠️ ' + res.nombre;
+          msgEl.textContent = res.mensaje;
+        } else {
+          box.classList.add('error');
+          nameEl.textContent = '❌ No registrado';
+          msgEl.textContent = res.mensaje;
+        }
+
+        setTimeout(() => {
+          isScanning = true;
+          box.style.display = 'none';
+        }, 3500);
+      }
+
+      function handleError() {
+        const box = document.getElementById('status-box');
+        box.style.display = 'block';
+        box.className = 'error';
+        document.getElementById('participant-name').textContent = 'Error';
+        document.getElementById('status-message').textContent = 'No se pudo conectar con el servidor.';
+        setTimeout(() => { isScanning = true; box.style.display = 'none'; }, 3500);
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          onScanSuccess
+        ).catch(function (error) {
+          document.getElementById('status-box').style.display = 'block';
+          document.getElementById('status-box').className = 'error';
+          document.getElementById('participant-name').textContent = '📷 Cámara no disponible';
+          document.getElementById('status-message').textContent = 'Verificá que otorgaste permiso de cámara al navegador.';
+        });
+      });
+    </script>
+  </body>
+</html>
