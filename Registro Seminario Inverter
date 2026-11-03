@@ -34,7 +34,7 @@
     </div>
 
     <script>
-      const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxs5iDCwcU8Vh2A0HAzdl86Yyz_4PiVWk9QYDQ-elYL74AzyarFt6-ca33cwALTDulL/exec";
+      const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx3iOpkJ7wNleiZAdJ9cx6JFfo_Rs1VU6rBXtwPAwus4bFTDR1MpH91iw8jaqKV9dte6A/exec";
 
       let isScanning = true;
 
